@@ -147,6 +147,6 @@ This project is open-source under the MIT License.
 
 **Omkar Madhusudan Ghogare**
 
-* Email: [[your-email@example.com](omkarofficial2107@gmail.com)]
+* Email: [(omkarofficial2107@gmail.com)]
 
 ---
