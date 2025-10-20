@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>New Delhi District Courts - Cause List</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-weight: bold; margin-bottom: 5px; }
+        select, input[type="date"], input[type="text"], input[type="radio"] { width: 100%; padding: 8px; }
+        .radio-group { display: flex; gap: 20px; }
+        button { padding: 10px 20px; margin-right: 10px; }
+        img#captcha { margin: 10px 0; max-width: 220px; }
+    </style>
+    <script>
+
+function loadCaptcha() {
+    const complex = document.getElementById('complex').value;
+    const court = document.getElementById('court').value;
+    const date = document.getElementById('date').value;
+    const cause_type = document.querySelector('input[name="cause_type"]:checked').value;
+
+    if (!complex || !court || !date) {
+        alert("Please fill all fields first");
+        return;
+    }
+
+    fetch('/prepare_captcha', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ complex, court, date, cause_type })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.error) {
+            alert("Error: " + data.error);
+        } else {
+            document.getElementById('captcha').src = data.captcha;
+            document.getElementById('captcha').style.display = 'block';
+        }
+    });
+}
+        function fetchCourts() {
+            const complex = document.getElementById('complex').value;
+            const courtSelect = document.getElementById('court');
+            courtSelect.innerHTML = '<option value="">Select Court</option>';
+            if (complex) {
+                fetch('/get_courts', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ complex: complex })
+                })
+                .then(response => response.json())
+                .then(courts => {
+                    courts.forEach(court => {
+                        const option = document.createElement('option');
+                        option.value = court;
+                        option.textContent = court;
+                        courtSelect.appendChild(option);
+                    });
+                })
+                .catch(error => console.error('Error fetching courts:', error));
+            }
+        }
+
+        function refreshCaptcha() {
+            document.getElementById('captcha').src = '/get_captcha?' + new Date().getTime();
+        }
+    </script>
+</head>
+<body>
+    <h1>⚖️ New Delhi District Courts – Cause List</h1>
+    <form action="/download_pdf" method="POST">
+        <div class="form-group">
+            <label for="complex">Court Complex *</label>
+            <select id="complex" name="complex" onchange="fetchCourts()" required>
+                <option value="">Select Court Complex</option>
+                {% for complex in complexes %}
+                    <option value="{{ complex }}">{{ complex }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="court">Court Number *</label>
+            <select id="court" name="court" required>
+                <option value="">Select Court</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="date">Cause List Date *</label>
+            <input type="date" id="date" name="date" value="{{ today }}" required>
+        </div>
+        <div class="form-group">
+            <label>Case Type *</label>
+            <div class="radio-group">
+                <label><input type="radio" name="cause_type" value="civil" checked> Civil</label>
+                <label><input type="radio" name="cause_type" value="criminal"> Criminal</label>
+            </div>
+        </div>
+        <div class="form-group">
+            <label>CAPTCHA *</label>
+                    <!-- Remove auto src="/get_captcha" -->
+            <img id="captcha" alt="CAPTCHA" style="display:none;">
+
+            <button type="button" onclick="loadCaptcha()">Load CAPTCHA</button>
+
+            <input type="text" name="captcha" placeholder="Enter CAPTCHA Code" maxlength="8" required>
+        </div>
+        <button type="submit">Search & Download PDF</button>
+        <button type="button" onclick="refreshCaptcha()">Refresh CAPTCHA</button>
+    </form>
+</body>
+</html>
